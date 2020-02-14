@@ -25,7 +25,7 @@ $
 ```
 $ python3.6 securityheaders.py https://www.google.com
 
-Missing or insecure headers:
+Security Headers::
 
     [ WARN ] X-Frame-Options is missing
     [ WARN ] Strict-Transport-Security is missing
