@@ -224,7 +224,7 @@ if __name__ == "__main__":
     okColor = '\033[92m'
     warnColor = '\033[93m'
     endColor = '\033[0m'
-    print("\r\nMissing or insecure headers:\r\n")
+    print("\r\nSecurity Headers:\r\n")
     for header, value in headers.items():
         if value['warn'] == 1:
             if value['defined'] == False:
