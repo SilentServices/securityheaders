@@ -4,6 +4,7 @@ import socket
 import ssl
 import sys
 import re
+import errno
 
 from urllib.parse import urlparse
 
@@ -113,9 +114,14 @@ class SecurityHeaders():
             conn.request('HEAD', path)
             res = conn.getresponse()
             headers = res.getheaders()
-        except socket.gaierror:
-            print('HTTP request failed')
+        except socket.error as e:
+            if e.errno == errno.ECONNREFUSED:
+                print('    [  ' + okColor + 'OK' + endColor + '  ] ' + 'Server not supporting plaintext http')
+
+            else:
+                print('HTTP request failed')
             return False
+
 
         """ Follow redirect """
         if (res.status >= 300 and res.status < 400  and follow_redirects > 0):
@@ -136,14 +142,14 @@ class SecurityHeaders():
 
         """ Default return array """
         retval = {
-            'x-frame-options': {'defined': False, 'warn': 1, 'contents': '' },
-            'strict-transport-security': {'defined': False, 'warn': 1, 'contents': ''},
-            'access-control-allow-origin': {'defined': False, 'warn': 0, 'contents': ''},
-            'content-security-policy': {'defined': False, 'warn': 1, 'contents': ''},
-            'x-xss-protection': {'defined': False, 'warn': 1, 'contents': ''}, 
-            'x-content-type-options': {'defined': False, 'warn': 1, 'contents': ''},
-            'x-powered-by': {'defined': False, 'warn': 0, 'contents': ''},
-            'server': {'defined': False, 'warn': 0, 'contents': ''} 
+            'X-Frame-Options': {'defined': False, 'warn': 1, 'contents': '' },
+            'Strict-Transport-Security': {'defined': False, 'warn': 1, 'contents': ''},
+            'Access-Control-Allow-Origin': {'defined': False, 'warn': 0, 'contents': ''},
+            'Content-Security-Policy': {'defined': False, 'warn': 1, 'contents': ''},
+            'X-Xss-Protection': {'defined': False, 'warn': 1, 'contents': ''},
+            'X-Content-Type-Options': {'defined': False, 'warn': 1, 'contents': ''},
+            'X-Powered-By': {'defined': False, 'warn': 0, 'contents': ''},
+            'Server': {'defined': False, 'warn': 0, 'contents': ''}
         }
 
         parsed = urlparse(url)
@@ -218,33 +224,34 @@ if __name__ == "__main__":
     okColor = '\033[92m'
     warnColor = '\033[93m'
     endColor = '\033[0m'
+    print("\r\nMissing or insecure headers:\r\n")
     for header, value in headers.items():
         if value['warn'] == 1:
             if value['defined'] == False:
-                print('Header \'' + header + '\' is missing ... [ ' + warnColor + 'WARN' + endColor + ' ]')
+                print('    ' + '[ ' + warnColor + 'WARN' + endColor + ' ] ' + header + ' is missing')
             else:
-                print('Header \'' + header + '\' contains value \'' + value['contents'] + '\'' + \
-                    ' ... [ ' + warnColor + 'WARN' + endColor + ' ]')
+                print('    ' + '[ ' + warnColor + 'WARN' + endColor + ' ] ' + header + ' contains value \'' + value['contents'] + '\'')
         elif value['warn'] == 0:
             if value['defined'] == False:
-                print('Header \'' + header + '\' is missing ... [ ' + okColor + 'OK' + endColor +' ]')
+                print('    ' + '[  ' + okColor + 'OK' + endColor + '  ] ' + header + ' is missing')
             else:
-                print('Header \'' + header + '\' contains value \'' + value['contents'] + '\'' + \
-                    ' ... [ ' + okColor + 'OK' + endColor + ' ]')
+                print('    ' + '[  ' + okColor + 'OK' + endColor + '  ] '+ header + ' contains value \'' + value['contents'] + '\'')
 
+    print("\r\nOther security results:\r\n")
     https = foo.test_https(url)
     if https['supported']:
-        print('HTTPS supported ... [ ' + okColor + 'OK' + endColor + ' ]')
+        print('    [  ' + okColor + 'OK' + endColor + '  ] ' + 'HTTPS supported')
     else:
-        print('HTTPS supported ... [ ' + warnColor + 'FAIL' + endColor + ' ]')
+        print('    [ ' + warnColor + 'FAIL' + endColor + ' ]' + 'HTTPS supported')
 
     if https['certvalid']:
-        print('HTTPS valid certificate ... [ ' + okColor + 'OK' + endColor + ' ]')
+        print('    [  ' + okColor + 'OK' + endColor + '  ] ' + 'HTTPS valid certificate')
     else:
-        print('HTTPS valid certificate ... [ ' + warnColor + 'FAIL' + endColor + ' ]')
+        print('    [ ' + warnColor + 'FAIL' + endColor + ' ] ' + 'HTTPS valid certificate')
 
 
     if foo.test_http_to_https(url, 5):
-        print('HTTP -> HTTPS redirect ... [ ' + okColor + 'OK' + endColor + ' ]')
+        print('    [  ' + okColor + 'OK' + endColor + '  ] ' + 'HTTP -> HTTPS redirect')
     else:
-        print('HTTP -> HTTPS redirect ... [ ' + warnColor + 'FAIL' + endColor + ' ]')
+        print('    [ ' + warnColor + 'FAIL' + endColor + ' ] ' + 'HTTP -> HTTPS redirect')
+    print("\r\n")
